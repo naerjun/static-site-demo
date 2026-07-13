@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My First CI/CD Site</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <div class="nav-brand">dev.journey</div>
+    <div class="nav-links">
+      <a href="#about">关于</a>
+      <a href="#stack">技术栈</a>
+      <a href="#cicd">CI/CD 流程</a>
+      <button id="theme-toggle" aria-label="切换主题">
+        <span class="theme-icon">🌙</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Hero 区域 -->
+  <section class="hero">
+    <div class="hero-content">
+      <p class="hero-greeting">Hello, World!</p>
+      <h1 class="hero-title">
+        我是 <span id="typewriter" class="typewriter"></span><span class="cursor">|</span>
+      </h1>
+      <p class="hero-desc">
+        这是一个通过 GitHub Actions 自动构建和部署的静态网站<br>
+        每次推送代码，网站就会自动更新 —— 零手动操作
+      </p>
+      <a href="#about" class="cta-button">开始探索 ↓</a>
+    </div>
+  </section>
+
+  <!-- 关于项目 -->
+  <section id="about" class="section">
+    <div class="container">
+      <h2 class="section-title">关于这个项目</h2>
+      <p class="section-desc">
+        这是我的第一个 CI/CD 实践项目。一个纯静态网站，没有任何后端，
+        只有 HTML、CSS 和 JS。但它的部署流程是全自动的：
+      </p>
+      <div class="flow-steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">写代码，push 到 GitHub</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">GitHub Actions 自动触发</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">构建并部署到 GitHub Pages</div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-text">网站自动上线</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 技术栈 -->
+  <section id="stack" class="section section-alt">
+    <div class="container">
+      <h2 class="section-title">技术栈</h2>
+      <div class="cards">
+        <div class="card">
+          <div class="card-icon">📄</div>
+          <h3>HTML5</h3>
+          <p>语义化结构，无框架依赖</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎨</div>
+          <h3>CSS3</h3>
+          <p>CSS 变量 + 暗色模式 + 响应式</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">⚡</div>
+          <h3>JavaScript</h3>
+          <p>主题切换 + 打字机效果</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🤖</div>
+          <h3>GitHub Actions</h3>
+          <p>自动构建、部署到 Pages</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🌐</div>
+          <h3>GitHub Pages</h3>
+          <p>免费静态托管，自动 HTTPS</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📦</div>
+          <h3>Artifact</h3>
+          <p>构建产物中转，保证部署可靠</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CI/CD 流程说明 -->
+  <section id="cicd" class="section">
+    <div class="container">
+      <h2 class="section-title">CI/CD 流程</h2>
+      <p class="section-desc">
+        下面的流程展示了每次 <code>git push</code> 后发生的事情。
+        整个过程由 <code>.github/workflows/deploy.yml</code> 定义。
+      </p>
+      <div class="pipeline">
+        <div class="pipeline-stage">
+          <div class="stage-label">触发</div>
+          <div class="stage-detail">push to main</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-stage stage-build">
+          <div class="stage-label">Build Job</div>
+          <div class="stage-detail">checkout → configure → upload</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-stage stage-deploy">
+          <div class="stage-label">Deploy Job</div>
+          <div class="stage-detail">deploy-pages → 网站上线</div>
+        </div>
+      </div>
+      <div class="callout">
+        <strong>关键概念：</strong>
+        <ul>
+          <li><code>permissions</code> — 声明工作流需要哪些权限（读代码、写 Pages）</li>
+          <li><code>concurrency</code> — 同一时间只允许一个部署运行，避免冲突</li>
+          <li><code>needs</code> — deploy 依赖 build，构建成功后才部署</li>
+          <li><code>artifact</code> — 构建产物的临时存储，跨 job 传递文件</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 页脚 -->
+  <footer class="footer">
+    <p>Built with HTML/CSS/JS + GitHub Actions + GitHub Pages</p>
+    <p>我的第一个 CI/CD 实践项目 · 2026</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

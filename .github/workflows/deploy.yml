@@ -1,0 +1,108 @@
+# ============================================================
+# GitHub Actions 工作流：自动部署静态网站到 GitHub Pages
+# ============================================================
+#
+# 这是 Lv.1 实践项目的核心文件。
+# 每一行都加了注释，帮你理解每个配置的含义。
+# ============================================================
+
+# 工作流名称 —— 会显示在 GitHub Actions 页面上
+name: Deploy to GitHub Pages
+
+# ----------------------------------------------------------
+# 触发条件：什么时候运行这个工作流？
+# ----------------------------------------------------------
+on:
+  # 当有人 push 到 main 分支时自动触发
+  push:
+    branches: [main]
+
+  # 也允许手动触发（在 Actions 页面点 "Run workflow" 按钮）
+  # 方便你改了 GitHub Pages 设置后重新部署
+  workflow_dispatch:
+
+# ----------------------------------------------------------
+# 权限声明：工作流需要哪些权限？
+# ----------------------------------------------------------
+# GitHub Actions 默认权限很保守，需要显式声明
+permissions:
+  # 读取仓库代码（checkout 需要这个权限）
+  contents: read
+
+  # 写入 GitHub Pages（部署需要这个权限）
+  pages: write
+
+  # 生成 OIDC token（用于身份验证，Pages 部署需要）
+  id-token: write
+
+# ----------------------------------------------------------
+# 并发控制：同一时间只允许一个部署运行
+# ----------------------------------------------------------
+# 如果你快速 push 了两次，第二次会取消第一次的部署
+# 避免资源浪费和部署冲突
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+# ----------------------------------------------------------
+# Jobs：工作流的具体步骤
+# ----------------------------------------------------------
+# GitHub Pages 部署分两个 job：
+#   1. build —— 拉取代码，打包成 artifact
+#   2. deploy —— 把 artifact 部署到 Pages
+# 为什么要分成两个 job？
+#   - 职责清晰：构建和部署分离
+#   - 权限隔离：build 只需要读，deploy 需要写
+#   - 可复用：以后可以加 lint/test job，都依赖 build
+
+jobs:
+  # ==========================================================
+  # Job 1: 构建
+  # ==========================================================
+  build:
+    runs-on: ubuntu-latest  # 使用 GitHub 提供的 Ubuntu 服务器
+
+    steps:
+      # 步骤 1：拉取你的代码到服务器上
+      # 相当于在服务器上执行 git clone
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 步骤 2：配置 GitHub Pages
+      # 这一步会设置 Pages 的元信息，告诉 GitHub 准备接收部署
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      # 步骤 3：上传构建产物（artifact）
+      # 把当前目录的所有文件打包成一个 artifact
+      # artifact 是 GitHub Actions 中跨 job 传递文件的机制
+      # path: '.' 表示整个项目目录（因为这是纯静态站，不需要构建）
+      # 如果用的是 React/Vue 等框架，path 应该改成 'dist' 或 'build'
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'  # 纯静态站，直接上传源文件
+
+  # ==========================================================
+  # Job 2: 部署
+  # ==========================================================
+  deploy:
+    # needs: build —— 等构建完成后再部署
+    # 如果 build 失败了，deploy 不会运行
+    needs: build
+
+    runs-on: ubuntu-latest
+
+    # environment: github-pages —— 声明部署目标是 Pages 环境
+    # GitHub 会根据这个自动生成部署 URL
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}  # 部署完成后输出网站地址
+
+    steps:
+      # 步骤 1：把 artifact 部署到 GitHub Pages
+      # 这一步会自动下载 build job 上传的 artifact
+      # 然后把它部署到 Pages，让网站上线
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
