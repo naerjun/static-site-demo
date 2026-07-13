@@ -1,0 +1,113 @@
+# ============================================================
+# GitHub Actions 工作流：自动部署静态网站到 GitHub Pages
+# 新增：Workflow 语法 Lint 校验，杜绝配置错误、Node 版本警告
+# ============================================================
+#
+# 这是 Lv.1 实践项目的核心文件。
+# 每一行都加了注释，帮你理解每个配置的含义。
+# ============================================================
+
+# 工作流名称 —— 会显示在 GitHub Actions 页面上
+name: Deploy to GitHub Pages
+
+# ----------------------------------------------------------
+# 触发条件：什么时候运行这个工作流？
+# ----------------------------------------------------------
+on:
+  # 当有人 push 到 main 分支时自动触发
+  push:
+    branches: [main]
+
+  # 也允许手动触发（在 Actions 页面点 "Run workflow" 按钮）
+  # 方便你改了 GitHub Pages 设置后重新部署
+  workflow_dispatch:
+
+# ----------------------------------------------------------
+# 权限声明：工作流需要哪些权限？
+# ----------------------------------------------------------
+# GitHub Actions 默认权限很保守，需要显式声明
+permissions:
+  # 读取仓库代码（checkout 需要这个权限）
+  contents: read
+
+  # 写入 GitHub Pages（部署需要这个权限）
+  pages: write
+
+  # 生成 OIDC token（用于身份验证，Pages 部署需要）
+  id-token: write
+
+# ----------------------------------------------------------
+# 并发控制：同一时间只允许一个部署运行
+# ----------------------------------------------------------
+# 如果你快速 push 了两次，第二次会取消第一次的部署
+# 避免资源浪费和部署冲突
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+# ----------------------------------------------------------
+# Jobs：工作流的具体步骤
+# ----------------------------------------------------------
+# 新增 lint 任务：优先校验 workflow 语法，有错直接终止，不浪费部署资源
+# GitHub Pages 部署分两个 job：build 构建、deploy 部署
+jobs:
+  # ==========================================================
+  # Job 0: Lint 语法校验（新增）
+  # 作用：检查当前所有 workflow yml 语法错误、配置不规范
+  # ==========================================================
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      # 拉取代码（必须先拉代码，才能读取 workflow 文件做校验）
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      # 执行 ActionLint 校验（和你之前同款配置）
+      - name: Run actionlint
+        uses: docker://rhysd/actionlint:1.7.12
+        with:
+          args: -shellcheck= -verbose
+
+  # ==========================================================
+  # Job 1: 构建
+  # ==========================================================
+  build:
+    # 等待语法校验通过后再构建，语法错误直接不执行部署
+    needs: lint
+    runs-on: ubuntu-latest  # 使用 GitHub 提供的 Ubuntu 服务器
+
+    steps:
+      # 步骤 1：拉取你的代码到服务器上
+      # 升级为 v5 彻底解决 Node20 废弃警告
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # 步骤 2：配置 GitHub Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # 步骤 3：上传构建产物（artifact）
+      # 纯静态站，直接上传根目录所有文件
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+  # ==========================================================
+  # Job 2: 部署
+  # ==========================================================
+  deploy:
+    # 等待构建完成后再部署
+    needs: build
+    runs-on: ubuntu-latest
+
+    # 声明部署目标为 GitHub Pages 环境
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      # 部署静态资源到 GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
